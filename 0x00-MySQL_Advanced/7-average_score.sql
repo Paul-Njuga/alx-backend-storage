@@ -1,17 +1,23 @@
--- Creates a stored procedure AddBonus that adds a new correction for a student
-
-DELIMITER //
-CREATE PROCEDURE AddBonus(
-	IN user_id INTEGER,
-	IN project_name VARCHAR(255),
-	IN score INTEGER
-)
+-- Creates a stored procedure ComputeAverageScoreForUser that
+-- computes and stores the average score for a student.
+DROP PROCEDURE IF EXISTS ComputeAverageScoreForUser;
+DELIMITER $$
+CREATE PROCEDURE ComputeAverageScoreForUser (user_id INT)
 BEGIN
-    INSERT INTO projects (name)
-    SELECT project_name from DUAL 
-    WHERE NOT EXISTS (SELECT * FROM projects WHERE name=project_name LIMIT 1);
+    DECLARE total_score INT DEFAULT 0;
+    DECLARE projects_count INT DEFAULT 0;
 
-    INSERT INTO corrections (user_id, project_id, score)
-    VALUES(user_id, (SELECT id from projects WHERE name=project_name), score);
-END //
+    SELECT SUM(score)
+        INTO total_score
+        FROM corrections
+        WHERE corrections.user_id = user_id;
+    SELECT COUNT(*)
+        INTO projects_count
+        FROM corrections
+        WHERE corrections.user_id = user_id;
+
+    UPDATE users
+        SET users.average_score = IF(projects_count = 0, 0, total_score / projects_count)
+        WHERE users.id = user_id;
+END $$
 DELIMITER ;
